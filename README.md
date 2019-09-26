@@ -1,43 +1,51 @@
 # go-cache
 
-go-cache is an in-memory key:value store/cache similar to memcached that is
-suitable for applications running on a single machine. Its major advantage is
-that, being essentially a thread-safe `map[string]interface{}` with expiration
-times, it doesn't need to serialize or transmit its contents over the network.
+go-cache is an in-memory key:value store/cache similar to memcached that is suitable for applications running on a single machine. Its major advantage is that, being essentially a thread-safe map[string]interface{} with expiration times, it doesn't need to serialize or transmit its contents over the network.
 
-Any object can be stored, for a given duration or forever, and the cache can be
-safely used by multiple goroutines.
+Any object can be stored, for a given duration or forever, and the cache can be safely used by multiple goroutines.
 
-Although go-cache isn't meant to be used as a persistent datastore, the entire
-cache can be saved to and loaded from a file (using `c.Items()` to retrieve the
-items map to serialize, and `NewFrom()` to create a cache from a deserialized
-one) to recover from downtime quickly. (See the docs for `NewFrom()` for caveats.)
+This forked version of go-cache is a much simplified version of the original. This version 
+has the following changes from the original:
+
+1. expired items stay in the cache, but a user provided callback function is executed when the cache expires
+2. cache expiration is applied to the entire cache, rather than to individual keys
+3. removed increment/decrement feature
+4. removed ability to persist cache to disk
+5. removed auto eviction of expired items
+
+This version of the library is ideal a a simple lookup cache that is populated by a relatively static list 
+of items that have a limited life or that change infrequently. For example, you fetch a list of records from 
+a lookup table in a database and put them in the cache with a timeout of 24hrs. The data in the database changes 
+infrequently, which justifies the 24hr timeout, and performing the lookup from the cache is faster than going 
+back to the database. 
+
+Forked from: https://github.com/patrickmn/go-cache
 
 ### Installation
 
-`go get github.com/patrickmn/go-cache`
+`go get github.com/jfarleyx/go-cache`
 
 ### Usage
 
 ```go
 import (
 	"fmt"
-	"github.com/patrickmn/go-cache"
+	"github.com/jfarleyx/go-cache"
 	"time"
 )
 
 func main() {
-	// Create a cache with a default expiration time of 5 minutes, and which
-	// purges expired items every 10 minutes
-	c := cache.New(5*time.Minute, 10*time.Minute)
+	// Create a cache with a default expiration time of 5 hours
+	c := cache.New(5*time.Hour)
 
-	// Set the value of the key "foo" to "bar", with the default expiration time
-	c.Set("foo", "bar", cache.DefaultExpiration)
+	// Provide a callback function that is called when the cache expires
+	myfunc := func() {
+		// e.g. fetch current data and refill cache
+	}
+	c.cache.OnExpired(myfunc)
 
-	// Set the value of the key "baz" to 42, with no expiration time
-	// (the item won't be removed until it is re-set, or removed using
-	// c.Delete("baz")
-	c.Set("baz", 42, cache.NoExpiration)
+	// Set the value of the key "foo" to "bar"
+	c.Set("foo", "bar")
 
 	// Get the string associated with the key "foo" from the cache
 	foo, found := c.Get("foo")
@@ -70,14 +78,10 @@ func main() {
 	// foo can then be passed around freely as a string
 
 	// Want performance? Store pointers!
-	c.Set("foo", &MyStruct, cache.DefaultExpiration)
+	c.Set("foo", &MyStruct)
 	if x, found := c.Get("foo"); found {
 		foo := x.(*MyStruct)
 			// ...
 	}
 }
 ```
-
-### Reference
-
-`godoc` or [http://godoc.org/github.com/patrickmn/go-cache](http://godoc.org/github.com/patrickmn/go-cache)
