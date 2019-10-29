@@ -13,7 +13,7 @@ has the following changes from the original:
 4. removed ability to persist cache to disk
 5. removed auto eviction of expired items
 
-This version of the library is ideal a a simple lookup cache that is populated by a relatively static list 
+This version of the library is ideal as a simple lookup cache that is populated by a relatively static list 
 of items that have a limited life or that change infrequently. For example, you fetch a list of records from 
 a lookup table in a database and put them in the cache with a timeout of 24hrs. The data in the database changes 
 infrequently, which justifies the 24hr timeout, and performing the lookup from the cache is faster than going 
