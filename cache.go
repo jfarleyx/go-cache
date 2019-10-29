@@ -114,7 +114,7 @@ func (c *cache) DeleteExpired() {
 	c.mu.Lock()
 	for k, v := range c.items {
 		if v.Expiration > 0 && now > v.Expiration {
-			c.Delete(k)
+			delete(c.items, k)
 		}
 	}
 	c.mu.Unlock()
